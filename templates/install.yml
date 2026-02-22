@@ -1,0 +1,87 @@
+spec:
+  inputs:
+    stage:
+      default: deploy
+      description: Stage name for the generated install job.
+    job_prefix:
+      default: asc
+      description: Prefix used in the generated install job name.
+    asc_version:
+      default: latest
+      description: Release version (for example 0.31.5) or latest.
+    working_dir:
+      default: $CI_PROJECT_DIR
+      description: Working directory before installation.
+    profile:
+      default: ""
+      description: Optional ASC_PROFILE value exported via dotenv artifact.
+    bypass_keychain:
+      default: "1"
+      description: ASC_BYPASS_KEYCHAIN value exported via dotenv artifact.
+---
+"$[[ inputs.job_prefix ]]-install":
+  stage: "$[[ inputs.stage ]]"
+  image: alpine:3.20
+  script:
+    - apk add --no-cache bash curl ca-certificates coreutils
+    - |
+      set -euo pipefail
+
+      cd "$[[ inputs.working_dir ]]"
+
+      asc_version="$[[ inputs.asc_version ]]"
+      if [ "${asc_version}" = "latest" ]; then
+        latest_url="$(curl -fsSL -o /dev/null -w "%{url_effective}" "https://github.com/rudrankriyam/App-Store-Connect-CLI/releases/latest")"
+        asc_version="${latest_url##*/}"
+      fi
+
+      case "$(uname -m)" in
+        x86_64|amd64)
+          asc_arch="amd64"
+          ;;
+        arm64|aarch64)
+          asc_arch="arm64"
+          ;;
+        *)
+          echo "Unsupported architecture: $(uname -m)" >&2
+          exit 1
+          ;;
+      esac
+
+      asc_asset="asc_${asc_version}_linux_${asc_arch}"
+      asc_base_url="https://github.com/rudrankriyam/App-Store-Connect-CLI/releases/download/${asc_version}"
+      asc_root="${CI_PROJECT_DIR}/.asc"
+      asc_bin_dir="${asc_root}/bin"
+      mkdir -p "${asc_bin_dir}"
+
+      curl -fsSL "${asc_base_url}/${asc_asset}" -o "${asc_bin_dir}/asc"
+      curl -fsSL "${asc_base_url}/asc_${asc_version}_checksums.txt" -o "${asc_root}/checksums.txt"
+
+      expected_checksum="$(awk -v asset="${asc_asset}" '{name=$2; sub(/^\*/, "", name); if (name == asset) {print $1; exit}}' "${asc_root}/checksums.txt")"
+      if [ -z "${expected_checksum}" ]; then
+        echo "Unable to locate checksum for ${asc_asset}" >&2
+        exit 1
+      fi
+
+      actual_checksum="$(sha256sum "${asc_bin_dir}/asc" | awk '{print $1}')"
+      if [ "${expected_checksum}" != "${actual_checksum}" ]; then
+        echo "Checksum verification failed for ${asc_asset}" >&2
+        exit 1
+      fi
+
+      chmod +x "${asc_bin_dir}/asc"
+      "${asc_bin_dir}/asc" --version
+
+      {
+        echo "ASC_BIN_DIR=${asc_bin_dir}"
+        echo "ASC_BYPASS_KEYCHAIN=$[[ inputs.bypass_keychain ]]"
+        if [ -n "$[[ inputs.profile ]]" ]; then
+          echo "ASC_PROFILE=$[[ inputs.profile ]]"
+        fi
+      } > "${asc_root}/asc.env"
+  artifacts:
+    paths:
+      - .asc/bin/asc
+    reports:
+      dotenv: .asc/asc.env
+    expire_in: 1 day
