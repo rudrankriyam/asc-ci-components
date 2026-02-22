@@ -2,6 +2,16 @@
 
 Official GitLab CI/CD components for `asc` (App Store Connect CLI).
 
+Catalog-ready GitLab CI/CD component templates for GitLab.com and self-managed GitLab.
+Use this repository to install and run `asc` in iOS release pipelines, including App Store Connect and TestFlight automation.
+
+## Why this repository
+
+- official integration surface for `asc` on GitLab CI/CD
+- reusable component templates built with `spec:inputs`
+- versioned includes (`@1.0.0`) for stable production pipelines
+- self-test pipeline that validates components via `@$CI_COMMIT_SHA`
+
 ## Components
 
 - `install`: installs a versioned `asc` binary and verifies checksums.
@@ -53,6 +63,8 @@ include:
       command: asc --help
 ```
 
+For production pipelines, pin to semver tags. Use `@main` only for preview/testing.
+
 ### 2) Staged pipeline usage
 
 ```yaml
@@ -92,6 +104,8 @@ This project includes its own components in `.gitlab-ci.yml` using:
 - `component: "$CI_SERVER_FQDN/$CI_PROJECT_PATH/<component>@$CI_COMMIT_SHA"`
 
 The validation flow also calls the GitLab API through `$CI_API_V4_URL` to confirm included jobs are present and executable.
+
+This follows GitLab component guidance around parameterized templates and commit-SHA validation in the component project itself.
 
 ## Release Process
 
