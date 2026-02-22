@@ -1,0 +1,45 @@
+stages:
+  - lint
+  - test
+  - verify
+
+include:
+  - component: "$CI_SERVER_FQDN/$CI_PROJECT_PATH/install@$CI_COMMIT_SHA"
+    inputs:
+      stage: test
+      job_prefix: component-smoke
+      asc_version: latest
+      working_dir: $CI_PROJECT_DIR
+      bypass_keychain: "1"
+  - component: "$CI_SERVER_FQDN/$CI_PROJECT_PATH/run@$CI_COMMIT_SHA"
+    inputs:
+      stage: test
+      job_prefix: component-smoke
+      asc_version: latest
+      command: asc --help
+      working_dir: $CI_PROJECT_DIR
+      bypass_keychain: "1"
+
+validate-component-files:
+  stage: lint
+  image: alpine:3.20
+  script:
+    - test -f templates/install.yml
+    - test -f templates/run.yml
+    - sed -n '1,12p' templates/install.yml
+    - sed -n '1,12p' templates/run.yml
+
+validate-included-component-jobs:
+  stage: verify
+  image: alpine:3.20
+  needs:
+    - job: component-smoke-install
+    - job: component-smoke-run
+  script:
+    - apk add --no-cache curl jq
+    - |
+      set -euo pipefail
+
+      jobs_json="$(curl --silent --show-error --fail --header "JOB-TOKEN: $CI_JOB_TOKEN" "$CI_API_V4_URL/projects/$CI_PROJECT_ID/pipelines/$CI_PIPELINE_ID/jobs?per_page=100")"
+      echo "${jobs_json}" | jq -e '.[] | select(.name == "component-smoke-install")' > /dev/null
+      echo "${jobs_json}" | jq -e '.[] | select(.name == "component-smoke-run")' > /dev/null
