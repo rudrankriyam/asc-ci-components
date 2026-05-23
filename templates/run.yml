@@ -77,6 +77,8 @@ spec:
       fi
 
       cd "$[[ inputs.working_dir ]]"
-      bash <<'__ASC_RUN_COMMAND__'
+      asc_command="$(cat <<'__ASC_RUN_COMMAND__'
       $[[ inputs.command ]]
       __ASC_RUN_COMMAND__
+      )"
+      bash -c "${asc_command}"
