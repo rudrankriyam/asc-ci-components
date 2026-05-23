@@ -16,7 +16,9 @@ include:
       stage: test
       job_prefix: component-smoke
       asc_version: latest
-      command: asc --help
+      command: |
+        printf "%s\n" "asc path: $(command -v asc)"
+        asc --help
       working_dir: $CI_PROJECT_DIR
       bypass_keychain: "1"
 
