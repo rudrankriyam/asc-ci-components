@@ -5,7 +5,13 @@ spec:
       description: Stage name for the generated run job.
     job_prefix:
       default: asc
-      description: Prefix used in the generated run job name.
+      description: >-
+        Prefix used in the generated run job name. Restricted to letters,
+        digits, dots, underscores, and dashes.
+      regex: ^[a-zA-Z0-9][a-zA-Z0-9._-]*$
+    image:
+      default: alpine:3.20
+      description: Container image used for the generated run job.
     asc_version:
       default: latest
       description: Release version (for example 0.31.5) or latest.
@@ -23,13 +29,18 @@ spec:
 ---
 "$[[ inputs.job_prefix ]]-run":
   stage: "$[[ inputs.stage ]]"
-  image: alpine:3.20
+  image: "$[[ inputs.image ]]"
+  variables:
+    ASC_INPUT_VERSION: "$[[ inputs.asc_version ]]"
+    ASC_INPUT_WORKING_DIR: "$[[ inputs.working_dir ]]"
+    ASC_INPUT_PROFILE: "$[[ inputs.profile ]]"
+    ASC_INPUT_BYPASS_KEYCHAIN: "$[[ inputs.bypass_keychain ]]"
   script:
     - apk add --no-cache bash curl ca-certificates coreutils
     - |
       set -euo pipefail
 
-      asc_version="$[[ inputs.asc_version ]]"
+      asc_version="${ASC_INPUT_VERSION}"
       if [ "${asc_version}" = "latest" ]; then
         latest_url="$(curl -fsSL -o /dev/null -w "%{url_effective}" "https://github.com/rudrankriyam/App-Store-Connect-CLI/releases/latest")"
         asc_version="${latest_url##*/}"
@@ -54,7 +65,6 @@ spec:
       asc_bin_dir="${asc_root}/bin"
       mkdir -p "${asc_bin_dir}"
 
-      curl -fsSL "${asc_base_url}/${asc_asset}" -o "${asc_bin_dir}/asc"
       curl -fsSL "${asc_base_url}/asc_${asc_version}_checksums.txt" -o "${asc_root}/checksums.txt"
 
       expected_checksum="$(awk -v asset="${asc_asset}" '{name=$2; sub(/^\*/, "", name); if (name == asset) {print $1; exit}}' "${asc_root}/checksums.txt")"
@@ -63,20 +73,26 @@ spec:
         exit 1
       fi
 
-      actual_checksum="$(sha256sum "${asc_bin_dir}/asc" | awk '{print $1}')"
-      if [ "${expected_checksum}" != "${actual_checksum}" ]; then
-        echo "Checksum verification failed for ${asc_asset}" >&2
-        exit 1
+      if [ -f "${asc_bin_dir}/asc" ] && [ "$(sha256sum "${asc_bin_dir}/asc" | awk '{print $1}')" = "${expected_checksum}" ]; then
+        echo "Reusing verified asc binary from install job artifact."
+      else
+        curl -fsSL "${asc_base_url}/${asc_asset}" -o "${asc_bin_dir}/asc"
+
+        actual_checksum="$(sha256sum "${asc_bin_dir}/asc" | awk '{print $1}')"
+        if [ "${expected_checksum}" != "${actual_checksum}" ]; then
+          echo "Checksum verification failed for ${asc_asset}" >&2
+          exit 1
+        fi
       fi
 
       chmod +x "${asc_bin_dir}/asc"
       export PATH="${asc_bin_dir}:${PATH}"
-      export ASC_BYPASS_KEYCHAIN="$[[ inputs.bypass_keychain ]]"
-      if [ -n "$[[ inputs.profile ]]" ]; then
-        export ASC_PROFILE="$[[ inputs.profile ]]"
+      export ASC_BYPASS_KEYCHAIN="${ASC_INPUT_BYPASS_KEYCHAIN}"
+      if [ -n "${ASC_INPUT_PROFILE}" ]; then
+        export ASC_PROFILE="${ASC_INPUT_PROFILE}"
       fi
 
-      cd "$[[ inputs.working_dir ]]"
+      cd "${ASC_INPUT_WORKING_DIR}"
       asc_command="$(cat <<'__ASC_RUN_COMMAND__'
       $[[ inputs.command ]]
       __ASC_RUN_COMMAND__

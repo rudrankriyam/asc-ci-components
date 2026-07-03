@@ -23,7 +23,10 @@ today.
 ## Components
 
 - `install`: installs a versioned `asc` binary and verifies checksums.
-- `run`: installs a versioned `asc` binary and executes a provided command.
+- `run`: runs a provided command with a checksum-verified `asc` binary. If a
+  verified binary from an earlier `install` job is already present in the
+  workspace (via artifacts), it is reused after re-verifying its checksum;
+  otherwise the binary is downloaded and verified independently.
 
 ## Repository Layout
 
@@ -41,7 +44,8 @@ LICENSE.md
 ### `install`
 
 - `stage` (default: `deploy`)
-- `job_prefix` (default: `asc`)
+- `job_prefix` (default: `asc`, constrained to `^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
+- `image` (default: `alpine:3.20`)
 - `asc_version` (default: `latest`)
 - `working_dir` (default: `$CI_PROJECT_DIR`)
 - `profile` (optional)
@@ -50,12 +54,26 @@ LICENSE.md
 ### `run`
 
 - `stage` (default: `deploy`)
-- `job_prefix` (default: `asc`)
+- `job_prefix` (default: `asc`, constrained to `^[a-zA-Z0-9][a-zA-Z0-9._-]*$`)
+- `image` (default: `alpine:3.20`)
 - `asc_version` (default: `latest`)
 - `command` (required)
 - `working_dir` (default: `$CI_PROJECT_DIR`)
 - `profile` (optional)
 - `bypass_keychain` (default: `"1"`)
+
+### Input handling notes
+
+- `working_dir`, `asc_version`, `profile`, and `bypass_keychain` are passed to
+  the job scripts through the job's `variables:` block and referenced as quoted
+  shell variables, so their values are never spliced into shell syntax.
+- `command` is captured via a quoted heredoc before execution.
+- `job_prefix` is interpolated at the YAML level (it becomes part of the job
+  name), so it is constrained by a `spec:inputs` regex to
+  `^[a-zA-Z0-9][a-zA-Z0-9._-]*$`.
+- The `run` component reuses a checksum-verified `asc` binary from a prior
+  `install` job artifact when one is present in the workspace; otherwise it
+  re-downloads and re-verifies independently.
 
 ## Pending publication examples
 
