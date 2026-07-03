@@ -1,21 +1,22 @@
 # asc-ci-components
 
-Source-only preview GitLab CI/CD component templates for `asc` (App Store
-Connect CLI).
+GitHub-released source preview GitLab CI/CD component templates for `asc`
+(App Store Connect CLI).
 
 Use this repository to install and run `asc` in iOS release pipelines, including App Store Connect and TestFlight automation.
 
 ## Publication status
 
-These templates are not published on GitLab.com or in the GitLab CI/CD Catalog,
-and this repository has no release tags. Any component include that uses a
-GitLab host or a semver ref is a future publication example, not an install path
-that works today.
+These templates have a GitHub source release, but they are not published on
+GitLab.com or in the GitLab CI/CD Catalog. Any component include that uses a
+GitLab host is a future publication example, not an install path that works
+today.
 
 ## Why this repository
 
 - source templates for a future `asc` GitLab CI/CD integration
 - reusable component templates built with `spec:inputs`
+- GitHub source release tag `1.0.0`
 - commit-SHA validation hooks for preview work
 - self-test pipeline that validates components via `@$CI_COMMIT_SHA`
 
@@ -59,8 +60,8 @@ LICENSE.md
 ## Pending publication examples
 
 The examples below show the intended component syntax after a GitLab project is
-created, catalog publication is done, and a semver tag exists. Replace the host,
-namespace, and tag with real published values before using them.
+created and catalog publication is done. Replace the host and namespace with
+real published values before using them.
 
 ### 1) Single-job install + run
 
@@ -123,7 +124,8 @@ This follows GitLab component guidance around parameterized templates and commit
 
 1. Create or mirror this project on GitLab.
 2. Validate the components in GitLab CI using commit-SHA includes.
-3. Tag a semantic version in the GitLab project, for example `1.0.0`.
+3. Mirror or create the semantic version tag in the GitLab project, for example
+   `1.0.0`.
 4. Publish to the GitLab CI/CD Catalog if catalog discovery is wanted.
 
 ```bash
@@ -131,5 +133,5 @@ git tag 1.0.0
 git push origin 1.0.0
 ```
 
-Use semantic version tags only after the GitLab project exists and the
-components pass validation there.
+The GitHub source release uses `1.0.0`; GitLab consumers still need a real
+GitLab project and matching tag before the component include examples work.
