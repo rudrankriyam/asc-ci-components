@@ -1,15 +1,22 @@
 # asc-ci-components
 
-Official GitLab CI/CD components for `asc` (App Store Connect CLI).
+Source-only preview GitLab CI/CD component templates for `asc` (App Store
+Connect CLI).
 
-Catalog-ready GitLab CI/CD component templates for GitLab.com and self-managed GitLab.
 Use this repository to install and run `asc` in iOS release pipelines, including App Store Connect and TestFlight automation.
+
+## Publication status
+
+These templates are not published on GitLab.com or in the GitLab CI/CD Catalog,
+and this repository has no release tags. Any component include that uses a
+GitLab host or a semver ref is a future publication example, not an install path
+that works today.
 
 ## Why this repository
 
-- official integration surface for `asc` on GitLab CI/CD
+- source templates for a future `asc` GitLab CI/CD integration
 - reusable component templates built with `spec:inputs`
-- versioned includes (`@1.0.0`) for stable production pipelines
+- commit-SHA validation hooks for preview work
 - self-test pipeline that validates components via `@$CI_COMMIT_SHA`
 
 ## Components
@@ -49,13 +56,17 @@ LICENSE.md
 - `profile` (optional)
 - `bypass_keychain` (default: `"1"`)
 
-## Usage Examples
+## Pending publication examples
+
+The examples below show the intended component syntax after a GitLab project is
+created, catalog publication is done, and a semver tag exists. Replace the host,
+namespace, and tag with real published values before using them.
 
 ### 1) Single-job install + run
 
 ```yaml
 include:
-  - component: gitlab.com/rudrankriyam/asc-ci-components/run@1.0.0
+  - component: gitlab.example.com/your-group/asc-ci-components/run@1.0.0
     inputs:
       stage: deploy
       job_prefix: release
@@ -63,7 +74,8 @@ include:
       command: asc --help
 ```
 
-For production pipelines, pin to semver tags. Use `@main` only for preview/testing.
+Do not use `gitlab.com/rudrankriyam/asc-ci-components` unless that GitLab
+project exists and contains the requested tag.
 
 ### 2) Staged pipeline usage
 
@@ -71,13 +83,13 @@ For production pipelines, pin to semver tags. Use `@main` only for preview/testi
 stages: [prepare, deploy]
 
 include:
-  - component: gitlab.com/rudrankriyam/asc-ci-components/install@1.0.0
+  - component: gitlab.example.com/your-group/asc-ci-components/install@1.0.0
     inputs:
       stage: prepare
       job_prefix: asc-prepare
       asc_version: 0.31.5
 
-  - component: gitlab.com/rudrankriyam/asc-ci-components/run@1.0.0
+  - component: gitlab.example.com/your-group/asc-ci-components/run@1.0.0
     inputs:
       stage: deploy
       job_prefix: asc-deploy
@@ -107,15 +119,17 @@ The validation flow also calls the GitLab API through `$CI_API_V4_URL` to confir
 
 This follows GitLab component guidance around parameterized templates and commit-SHA validation in the component project itself.
 
-## Release Process
+## Publication checklist
 
-1. Merge changes to `main`.
-2. Tag a semantic version (for example `1.0.0`).
-3. Push the tag and publish release notes.
+1. Create or mirror this project on GitLab.
+2. Validate the components in GitLab CI using commit-SHA includes.
+3. Tag a semantic version in the GitLab project, for example `1.0.0`.
+4. Publish to the GitLab CI/CD Catalog if catalog discovery is wanted.
 
 ```bash
 git tag 1.0.0
 git push origin 1.0.0
 ```
 
-Use semantic version tags for catalog consumption and stable downstream includes.
+Use semantic version tags only after the GitLab project exists and the
+components pass validation there.
