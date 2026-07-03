@@ -16,7 +16,7 @@ today.
 
 - source templates for a future `asc` GitLab CI/CD integration
 - reusable component templates built with `spec:inputs`
-- GitHub source release tag `1.0.0`
+- GitHub source release tag `1.0.1`
 - commit-SHA validation hooks for preview work
 - self-test pipeline that validates components via `@$CI_COMMIT_SHA`
 
@@ -85,7 +85,7 @@ real published values before using them.
 
 ```yaml
 include:
-  - component: gitlab.example.com/your-group/asc-ci-components/run@1.0.0
+  - component: gitlab.example.com/your-group/asc-ci-components/run@1.0.1
     inputs:
       stage: deploy
       job_prefix: release
@@ -102,13 +102,13 @@ project exists and contains the requested tag.
 stages: [prepare, deploy]
 
 include:
-  - component: gitlab.example.com/your-group/asc-ci-components/install@1.0.0
+  - component: gitlab.example.com/your-group/asc-ci-components/install@1.0.1
     inputs:
       stage: prepare
       job_prefix: asc-prepare
       asc_version: 0.31.5
 
-  - component: gitlab.example.com/your-group/asc-ci-components/run@1.0.0
+  - component: gitlab.example.com/your-group/asc-ci-components/run@1.0.1
     inputs:
       stage: deploy
       job_prefix: asc-deploy
@@ -120,7 +120,7 @@ include:
 
 ```yaml
 include:
-  - component: "$CI_SERVER_FQDN/my-group/asc-ci-components/run@1.0.0"
+  - component: "$CI_SERVER_FQDN/my-group/asc-ci-components/run@1.0.1"
     inputs:
       stage: deploy
       job_prefix: internal-release
@@ -143,13 +143,13 @@ This follows GitLab component guidance around parameterized templates and commit
 1. Create or mirror this project on GitLab.
 2. Validate the components in GitLab CI using commit-SHA includes.
 3. Mirror or create the semantic version tag in the GitLab project, for example
-   `1.0.0`.
+   `1.0.1`.
 4. Publish to the GitLab CI/CD Catalog if catalog discovery is wanted.
 
 ```bash
-git tag 1.0.0
-git push origin 1.0.0
+git tag 1.0.1
+git push origin 1.0.1
 ```
 
-The GitHub source release uses `1.0.0`; GitLab consumers still need a real
+The GitHub source release uses `1.0.1`; GitLab consumers still need a real
 GitLab project and matching tag before the component include examples work.
